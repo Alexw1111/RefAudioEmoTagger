@@ -7,4 +7,4 @@
 ## 部署
 安装环境
 
-`pip install -U funasr modelscope`
+`pip install funasr modelscope torchaudio`
