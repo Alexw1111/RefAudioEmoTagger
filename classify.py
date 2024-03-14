@@ -36,6 +36,6 @@ def classify_audio_emotion(log_file, dataset_path):
                 else:
                     print(f"File not found: {src_path}")
 
-log_file = r'F:\AItest\emo2vecmd\inference_results.list'
-dataset_path = r'F:\StarrailRailwayDataset'
+log_file = r''
+dataset_path = r''
 classify_audio_emotion(log_file, dataset_path)
