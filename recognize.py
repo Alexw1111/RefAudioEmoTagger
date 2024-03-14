@@ -68,6 +68,6 @@ def process_audio_files(folder_path, output_file, recognizer, batch_size=10, max
 
 # 示例初始化和使用代码
 emotion_recognizer = EmotionRecognitionPipeline(model_path="iic/emotion2vec_base_finetuned", device='cuda:0')
-folder_path = r'F:\星穹铁道参考音频\StarrailRailwayDataset'
+folder_path = r'audio'
 output_file = r'inference_results3.list'
 process_audio_files(folder_path, output_file, emotion_recognizer, batch_size=10, max_workers=4)
