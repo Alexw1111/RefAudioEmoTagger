@@ -7,4 +7,4 @@
 ## 部署
 安装环境
 
-`pip install funasr modelscope torchaudio`
+`pip install modelscope torchaudio pydub`
