@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
@@ -66,8 +67,16 @@ def process_audio_files(folder_path, output_file, recognizer, batch_size=10, max
     logging.info(f"Processed {len(audio_paths)} files in {folder_path}, "
                  f"total time: {time.time() - start_time:.2f} seconds")
 
-# 示例初始化和使用代码
-emotion_recognizer = EmotionRecognitionPipeline(model_path="iic/emotion2vec_base_finetuned", device='cuda:0')
-folder_path = r'audio'
-output_file = r'inference_results3.list'
-process_audio_files(folder_path, output_file, emotion_recognizer, batch_size=10, max_workers=4)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='识别音频文件中的情感')
+    parser.add_argument('--folder_path', type=str, required=True, help='包含音频文件的文件夹路径')
+    parser.add_argument('--output_file', type=str, required=True, help='输出文件的路径')
+    parser.add_argument('--model_path', type=str, default="iic/emotion2vec_base_finetuned", help='情感识别模型的路径')
+    parser.add_argument('--model_revision', type=str, default="v2.0.4", help='情感识别模型的修订版本')
+    parser.add_argument('--batch_size', type=int, default=10, help='推理的批量大小')
+    parser.add_argument('--max_workers', type=int, default=4, help='并行处理的最大工作线程数')
+
+    args = parser.parse_args()
+
+    emotion_recognizer = EmotionRecognitionPipeline(args.model_path, args.model_revision, args.device)
+    process_audio_files(args.folder_path, args.output_file, emotion_recognizer, args.batch_size, args.max_workers)
