@@ -11,7 +11,7 @@ import glob
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class EmotionRecognitionPipeline:
-    def __init__(self, model_path, model_revision="v2.0.4", device='cuda:0'):
+    def __init__(self, model_path="iic/emotion2vec_base_finetuned", model_revision="v2.0.4", device='cuda:0'):
         self.device = device
         self.target_sample_rate = 16000  # 目标采样率为16000 Hz
         self.pipeline = pipeline(
@@ -71,12 +71,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='识别音频文件中的情感')
     parser.add_argument('--folder_path', type=str, required=True, help='包含音频文件的文件夹路径')
     parser.add_argument('--output_file', type=str, required=True, help='输出文件的路径')
-    parser.add_argument('--model_path', type=str, default="iic/emotion2vec_base_finetuned", help='情感识别模型的路径')
     parser.add_argument('--model_revision', type=str, default="v2.0.4", help='情感识别模型的修订版本')
     parser.add_argument('--batch_size', type=int, default=10, help='推理的批量大小')
     parser.add_argument('--max_workers', type=int, default=4, help='并行处理的最大工作线程数')
 
     args = parser.parse_args()
 
-    emotion_recognizer = EmotionRecognitionPipeline(args.model_path, args.model_revision, args.device)
+    emotion_recognizer = EmotionRecognitionPipeline(model_revision=args.model_revision)
     process_audio_files(args.folder_path, args.output_file, emotion_recognizer, args.batch_size, args.max_workers)
