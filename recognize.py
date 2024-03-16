@@ -10,16 +10,6 @@ import glob
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-EMOTION_MAPPING = {  #使音频情感分类和文本情感分类输出一致
-    '恐惧': '恐惧',
-    '愤怒': '生气',
-    '厌恶': '厌恶', 
-    '喜好': '开心',
-    '悲伤': '难过',
-    '高兴': '开心',
-    '惊讶': '吃惊'
-}
-
 class EmotionRecognitionPipeline:
     def __init__(self, model_path="iic/emotion2vec_base_finetuned", model_revision="v2.0.4", device='cuda:0', target_sample_rate=16000):
         self.device = device
@@ -71,6 +61,16 @@ def process_audio_files(folder_path, output_file, recognizer, batch_size=10, max
     logging.info(f"Processed {len(audio_paths)} files in {folder_path}, total time: {time.time() - start_time:.2f} seconds")
 
 def process_text_emotion(audio_emotion_file, text_emotion_file, text_classifier):
+    emotion_mapping = {
+        '恐惧': '恐惧',
+        '愤怒': '生气',
+        '厌恶': '厌恶',
+        '喜好': '开心',
+        '悲伤': '难过',
+        '高兴': '开心',
+        '惊讶': '吃惊'
+    }
+
     with open(audio_emotion_file, 'r', encoding='utf-8') as f_in, open(text_emotion_file, 'w', encoding='utf-8') as f_out:
         header = f_in.readline().strip()
         f_out.write(f"{header}|TextEmotion\n")
@@ -78,16 +78,17 @@ def process_text_emotion(audio_emotion_file, text_emotion_file, text_classifier)
             audio_path, *rest = line.strip().split('|')
             text = os.path.splitext(os.path.basename(audio_path))[0]
             text_emotion = text_classifier(input=text)[0]['label']
-            mapped_emotion = EMOTION_MAPPING.get(text_emotion, text_emotion)
+            mapped_emotion = emotion_mapping.get(text_emotion, text_emotion)
             f_out.write(f"{line.strip()}|{mapped_emotion}\n")
 
 def main(args):
     emotion_recognizer = EmotionRecognitionPipeline(model_revision=args.model_revision)
     process_audio_files(args.folder_path, args.output_file, emotion_recognizer, args.batch_size, args.max_workers)
 
-    text_classifier = pipeline(Tasks.text_classification, 'damo/nlp_structbert_emotion-classification_chinese-large', model_revision='v1.0.0')
-    text_emotion_file = f"{os.path.splitext(args.output_file)[0]}_with_text_emotion.csv"
-    process_text_emotion(args.output_file, text_emotion_file, text_classifier)
+    if not args.disable_text_emotion:
+        text_classifier = pipeline(Tasks.text_classification, 'damo/nlp_structbert_emotion-classification_chinese-large', model_revision='v1.0.0')
+        text_emotion_file = f"{os.path.splitext(args.output_file)[0]}_with_text_emotion.csv"
+        process_text_emotion(args.output_file, text_emotion_file, text_classifier)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='识别音频文件中的情感')
@@ -96,5 +97,6 @@ if __name__ == "__main__":
     parser.add_argument('--model_revision', type=str, default="v2.0.4", help='情感识别模型的修订版本')
     parser.add_argument('--batch_size', type=int, default=10, help='推理的批量大小')
     parser.add_argument('--max_workers', type=int, default=4, help='并行处理的最大工作线程数')
+    parser.add_argument('--disable_text_emotion', action='store_true', help='是否禁用文本情感分类')
     args = parser.parse_args()
     main(args)
