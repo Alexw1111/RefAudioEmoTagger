@@ -10,7 +10,7 @@ import glob
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-EMOTION_MAPPING = {
+EMOTION_MAPPING = {  #使音频情感分类和文本情感分类输出一致
     '恐惧': '恐惧',
     '愤怒': '生气',
     '厌恶': '厌恶', 
