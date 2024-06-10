@@ -1,3 +1,6 @@
 pydub
 modelscope
 funasr
+torchaudio
+gradio==4.20
+transformers
