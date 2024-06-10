@@ -6,7 +6,7 @@
 
 ## 依赖项
 
-- Python 3.10
+- Python 3.10.8
 - 安装所需依赖`pip install -r requirements.txt`
 ## 快速使用
 
