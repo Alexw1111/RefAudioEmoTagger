@@ -11,7 +11,7 @@
 ## 快速使用
 
 如果您想快速使用可以使用此[打包好的文件](https://www.123pan.com/s/BYgpjv-xVmJv.html)
-数据集格式可以参考此[数据集](https://github.com/AI-Hobbyist/Genshin_Datasets)，或者在音频名上标注音频内容否则无法使用文本情感识别功能。
+数据集格式可以参考此[数据集](https://github.com/AI-Hobbyist/Genshin_Datasets)
 输入可以参考此格式:
 ```
 input
