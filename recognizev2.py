@@ -59,7 +59,7 @@ async def process_audio_files(folder_path, recognizer, batch_size=64, max_worker
 async def main(args):
     emotion_recognizer = pipeline(
         task=Tasks.emotion_recognition,
-        model="iic\emotion2vec_plus_large"
+        model="iic/emotion2vec_plus_large"
     )
     
     audio_emotion_results = await process_audio_files(args.folder_path, emotion_recognizer, args.batch_size, args.max_workers)
