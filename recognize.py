@@ -15,7 +15,7 @@ import gc
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class EmotionRecognitionPipeline:
-    def __init__(self, model_path="iic\emotion2vec_base_finetuned", model_revision="v2.0.4", device='cuda:0', target_sample_rate=16000):
+    def __init__(self, model_path="iic/emotion2vec_base_finetuned", model_revision="v2.0.4", device='cuda:0', target_sample_rate=16000):
         self.device = device
         self.target_sample_rate = target_sample_rate
         self.pipeline = pipeline(
