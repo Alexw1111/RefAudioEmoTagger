@@ -4,3 +4,10 @@ funasr
 torchaudio
 gradio==4.20
 transformers
+addict
+datasets==2.18.0
+torch
+pandas
+numpy
+soundfile
+librosa
