@@ -10,7 +10,7 @@
 - 安装所需依赖`pip install -r requirements.txt`
 ## 快速使用
 
-如果您想快速使用可以使用此[打包好的文件](https://www.123pan.com/s/BYgpjv-xVmJv.html)
+如果您想快速使用可以使用此[打包好的文件](https://www.modelscope.cn/models/wed13dqd/RefAudioEmoTagger/resolve/master/RefAudioEmoTagger.7z)
 数据集格式可以参考此[数据集](https://github.com/AI-Hobbyist/Genshin_Datasets)
 输入可以参考此格式:
 ```
