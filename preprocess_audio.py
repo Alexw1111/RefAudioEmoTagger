@@ -110,7 +110,7 @@ def rename_wav_with_list(list_file, wav_folder, dst_directory=None):
     logging.info(f"共重命名了 {renamed_count} 个文件")
     return renamed_count
 
-def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, copy_parent_folder=False):
+def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, copy_parent_folder=False, force_copy=False):
     """根据音频时长过滤文件"""
     if not os.path.exists(src_folder):
         logging.error(f"源文件夹不存在: {src_folder}")
@@ -130,12 +130,16 @@ def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, c
 
         os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 
-        duration = AudioSegment.from_wav(src_path).duration_seconds
-        if min_duration <= duration <= max_duration:
-            AudioSegment.from_wav(src_path).export(dst_path, format="wav")
+        if force_copy:
+            shutil.copy2(src_path, dst_path)
             logging.info(f"已复制: {src_path} -> {dst_path}")
         else:
-            logging.warning(f"跳过: {src_path} (时长: {duration:.2f}秒)")
+            duration = AudioSegment.from_wav(src_path).duration_seconds
+            if min_duration <= duration <= max_duration:
+                AudioSegment.from_wav(src_path).export(dst_path, format="wav")
+                logging.info(f"已复制: {src_path} -> {dst_path}")
+            else:
+                logging.warning(f"跳过: {src_path} (时长: {duration:.2f}秒)")
 
     logging.info(f"过滤后的音频已保存在 {filtered_folder}")
     return filtered_folder

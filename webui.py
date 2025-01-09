@@ -46,6 +46,7 @@ def create_folders(folders):
 async def preprocess_and_rename_audio(input_folder, output_folder, min_duration, max_duration, disable_filter, rename_method, list_file=None):
     src_items = len(os.listdir(input_folder))
     copy_parent_folder = src_items > 5
+    renamed_files = 0
 
     # 先进行重命名
     if rename_method == "lab":
@@ -62,7 +63,12 @@ async def preprocess_and_rename_audio(input_folder, output_folder, min_duration,
 
     # 然后进行音频过滤
     if disable_filter:
-        filter_result = "跳过音频过滤步骤。"
+        # 如果禁用过滤且没有成功重命名任何文件，则强制复制所有文件
+        if renamed_files == 0:
+            filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder, force_copy=True)
+            filter_result = "已直接复制所有音频文件（跳过筛选）。"
+        else:
+            filter_result = "跳过音频过滤步骤。"
         audio_folder = output_folder
     else:
         filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder)
