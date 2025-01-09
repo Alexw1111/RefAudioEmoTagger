@@ -4,6 +4,8 @@ import logging
 import gradio as gr
 import sys
 import asyncio
+from pydantic import BaseModel
+from typing import Any
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
@@ -33,6 +35,10 @@ BATCH_SIZE = 50
 MAX_WORKERS = 4
 MODEL_REVISION = "v2.0.4"
 
+# 添加 Pydantic 配置
+class Config:
+    arbitrary_types_allowed = True
+
 def create_folders(folders):
     for folder in folders:
         os.makedirs(folder, exist_ok=True)
@@ -41,27 +47,29 @@ async def preprocess_and_rename_audio(input_folder, output_folder, min_duration,
     src_items = len(os.listdir(input_folder))
     copy_parent_folder = src_items > 5
 
-    if disable_filter:
-        filter_result = "跳过音频过滤步骤。"
-        audio_folder = input_folder
-    else:
-        filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder)
-        filter_result = f"音频过滤完成,结果保存在 {output_folder} 文件夹中。"
-        audio_folder = output_folder
-
+    # 先进行重命名
     if rename_method == "lab":
-        renamed_files = rename_wav_with_lab(audio_folder)
+        renamed_files = rename_wav_with_lab(input_folder, output_folder)
         rename_result = f"根据 .lab 文件重命名音频完成,共重命名 {renamed_files} 个文件。"
     elif rename_method == "list":
         if list_file:
-            renamed_files = rename_wav_with_list(list_file, audio_folder)
+            renamed_files = rename_wav_with_list(list_file, input_folder, output_folder)
             rename_result = f"根据 .list 文件重命名音频完成,共重命名 {renamed_files} 个文件。"
         else:
             rename_result = "请提供 .list 文件路径。"
     else:
         rename_result = "请选择重命名方式。"
 
-    return f"{filter_result}\n{rename_result}", audio_folder
+    # 然后进行音频过滤
+    if disable_filter:
+        filter_result = "跳过音频过滤步骤。"
+        audio_folder = output_folder
+    else:
+        filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder)
+        filter_result = f"音频过滤完成,结果保存在 {output_folder} 文件夹中。"
+        audio_folder = output_folder
+
+    return f"{rename_result}\n{filter_result}", audio_folder
 
 async def recognize_audio_emotions(audio_folder, batch_size, max_workers, output_file, model_name):
     if model_name == 'emotion2vec':
@@ -97,11 +105,13 @@ async def run_end_to_end_pipeline(input_folder, min_duration, max_duration, batc
     return f"{preprocess_result}\n{recognize_result}\n{classify_result}"
 
 def reset_folders():
+    # 只重置输出相关的文件夹，保留 input 文件夹
     folders = [CSV_OUTPUT_FOLDER, CLASSIFY_OUTPUT_FOLDER, PREPROCESS_OUTPUT_FOLDER]
     for folder in folders:
-        shutil.rmtree(folder, ignore_errors=True)
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
         os.makedirs(folder)
-    return f"{', '.join(folders)} 文件夹已重置。"
+    return f"输出文件夹 {', '.join(folders)} 已重置。"
 
 async def launch_ui():
     create_folders([INPUT_FOLDER, PREPROCESS_OUTPUT_FOLDER, CSV_OUTPUT_FOLDER, CLASSIFY_OUTPUT_FOLDER])
