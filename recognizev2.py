@@ -11,8 +11,14 @@ import pandas as pd
 import torch
 import asyncio
 import gc
+import gradio as gr
+from fastapi import FastAPI
+from pydantic import BaseModel, ConfigDict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+class Config:
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 async def process_batch(batch_audio_paths, recognizer):
     waveforms, sample_rates = zip(*[torchaudio.load(path) for path in batch_audio_paths])
