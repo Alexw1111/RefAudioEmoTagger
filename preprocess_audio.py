@@ -4,7 +4,6 @@ import argparse
 from pydub import AudioSegment
 import glob
 import re
-import shutil
 
 # 设置日志格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -13,7 +12,7 @@ def sanitize_filename(filename):
     """清理文件名中的无效字符，并限制长度"""
     return re.sub(r'[<>:"/\\|?*]', '_', filename.strip(' .'))[:255]
 
-def rename_wav_with_lab(directory, dst_directory=None):
+def rename_wav_with_lab(directory):
     """使用.lab文件中的信息重命名对应的.wav文件"""
     lab_files = glob.glob(os.path.join(directory, "**", "*.lab"), recursive=True)
     renamed_count = 0
@@ -34,32 +33,22 @@ def rename_wav_with_lab(directory, dst_directory=None):
                 continue
 
         new_name = sanitize_filename('_'.join(new_name_parts))
-        
-        if dst_directory:
-            # 保持原始目录结构
-            rel_path = os.path.relpath(os.path.dirname(wav_file), directory)
-            new_dir = os.path.join(dst_directory, rel_path)
-            os.makedirs(new_dir, exist_ok=True)
-            new_wav_file = os.path.join(new_dir, f"{new_name}.wav")
-        else:
-            new_wav_file = os.path.join(os.path.dirname(wav_file), f"{new_name}.wav")
+        new_wav_file = os.path.join(os.path.dirname(wav_file), f"{new_name}.wav")
 
         if new_wav_file != wav_file:
             try:
-                # 如果目标文件已存在，先删除
-                if os.path.exists(new_wav_file):
-                    os.remove(new_wav_file)
-                # 复制而不是重命名，这样原始文件保持不变
-                shutil.copy2(wav_file, new_wav_file)
+                os.rename(wav_file, new_wav_file)
                 renamed_count += 1
-                logging.info(f"重命名并复制: {wav_file} -> {new_wav_file}")
+                logging.info(f"重命名: {wav_file} -> {new_wav_file}")
+                os.remove(lab_file)
+                logging.info(f"删除 .lab 文件: {lab_file}")
             except OSError as e:
-                logging.error(f"复制文件时出错: {e}")
+                logging.error(f"重命名或删除文件时出错: {e}")
 
     logging.info(f"共重命名了 {renamed_count} 个文件")
     return renamed_count
 
-def rename_wav_with_list(list_file, wav_folder, dst_directory=None):
+def rename_wav_with_list(list_file, wav_folder):
     """使用.list文件中的信息重命名.wav文件"""
     renamed_count = 0
     
@@ -85,32 +74,20 @@ def rename_wav_with_list(list_file, wav_folder, dst_directory=None):
             continue
 
         wav_file = wav_files[0]
-        
-        if dst_directory:
-            # 保持原始目录结构
-            rel_path = os.path.relpath(os.path.dirname(wav_file), wav_folder)
-            new_dir = os.path.join(dst_directory, rel_path)
-            os.makedirs(new_dir, exist_ok=True)
-            new_wav_file = os.path.join(new_dir, f"{new_name}.wav")
-        else:
-            new_wav_file = os.path.join(os.path.dirname(wav_file), f"{new_name}.wav")
+        new_wav_file = os.path.join(os.path.dirname(wav_file), f"{new_name}.wav")
 
         if new_wav_file != wav_file:
             try:
-                # 如果目标文件已存在，先删除
-                if os.path.exists(new_wav_file):
-                    os.remove(new_wav_file)
-                # 复制而不是重命名，这样原始文件保持不变
-                shutil.copy2(wav_file, new_wav_file)
+                os.rename(wav_file, new_wav_file)
                 renamed_count += 1
-                logging.info(f"重命名并复制: {wav_file} -> {new_wav_file}")
+                logging.info(f"重命名: {wav_file} -> {new_wav_file}")
             except OSError as e:
-                logging.error(f"复制文件时出错: {e}")
+                logging.error(f"重命名文件时出错: {e}")
 
     logging.info(f"共重命名了 {renamed_count} 个文件")
     return renamed_count
 
-def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, copy_parent_folder=False, force_copy=False):
+def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, copy_parent_folder=False):
     """根据音频时长过滤文件"""
     if not os.path.exists(src_folder):
         logging.error(f"源文件夹不存在: {src_folder}")
@@ -130,16 +107,12 @@ def filter_audio(src_folder, dst_folder=None, min_duration=3, max_duration=10, c
 
         os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 
-        if force_copy:
-            shutil.copy2(src_path, dst_path)
+        duration = AudioSegment.from_wav(src_path).duration_seconds
+        if min_duration <= duration <= max_duration:
+            AudioSegment.from_wav(src_path).export(dst_path, format="wav")
             logging.info(f"已复制: {src_path} -> {dst_path}")
         else:
-            duration = AudioSegment.from_wav(src_path).duration_seconds
-            if min_duration <= duration <= max_duration:
-                AudioSegment.from_wav(src_path).export(dst_path, format="wav")
-                logging.info(f"已复制: {src_path} -> {dst_path}")
-            else:
-                logging.warning(f"跳过: {src_path} (时长: {duration:.2f}秒)")
+            logging.warning(f"跳过: {src_path} (时长: {duration:.2f}秒)")
 
     logging.info(f"过滤后的音频已保存在 {filtered_folder}")
     return filtered_folder
@@ -157,10 +130,10 @@ if __name__ == "__main__":
 
     # 先执行重命名操作
     if args.rename_method == 'lab':
-        renamed_count = rename_wav_with_lab(args.src_folder, args.dst_folder)
+        renamed_count = rename_wav_with_lab(args.src_folder)
     elif args.rename_method == 'list':
         list_file = input("请输入.list文件路径: ")
-        renamed_count = rename_wav_with_list(list_file, args.src_folder, args.dst_folder)
+        renamed_count = rename_wav_with_list(list_file, args.src_folder)
 
     logging.info(f"重命名完成，共重命名 {renamed_count} 个文件")
 

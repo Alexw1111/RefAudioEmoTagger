@@ -46,15 +46,14 @@ def create_folders(folders):
 async def preprocess_and_rename_audio(input_folder, output_folder, min_duration, max_duration, disable_filter, rename_method, list_file=None):
     src_items = len(os.listdir(input_folder))
     copy_parent_folder = src_items > 5
-    renamed_files = 0
 
     # 先进行重命名
     if rename_method == "lab":
-        renamed_files = rename_wav_with_lab(input_folder, output_folder)
+        renamed_files = rename_wav_with_lab(input_folder)
         rename_result = f"根据 .lab 文件重命名音频完成,共重命名 {renamed_files} 个文件。"
     elif rename_method == "list":
         if list_file:
-            renamed_files = rename_wav_with_list(list_file, input_folder, output_folder)
+            renamed_files = rename_wav_with_list(list_file, input_folder)
             rename_result = f"根据 .list 文件重命名音频完成,共重命名 {renamed_files} 个文件。"
         else:
             rename_result = "请提供 .list 文件路径。"
@@ -63,13 +62,8 @@ async def preprocess_and_rename_audio(input_folder, output_folder, min_duration,
 
     # 然后进行音频过滤
     if disable_filter:
-        # 如果禁用过滤且没有成功重命名任何文件，则强制复制所有文件
-        if renamed_files == 0:
-            filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder, force_copy=True)
-            filter_result = "已直接复制所有音频文件（跳过筛选）。"
-        else:
-            filter_result = "跳过音频过滤步骤。"
-        audio_folder = output_folder
+        filter_result = "跳过音频过滤步骤。"
+        audio_folder = input_folder
     else:
         filter_audio(input_folder, output_folder, min_duration, max_duration, copy_parent_folder=copy_parent_folder)
         filter_result = f"音频过滤完成,结果保存在 {output_folder} 文件夹中。"
@@ -111,13 +105,11 @@ async def run_end_to_end_pipeline(input_folder, min_duration, max_duration, batc
     return f"{preprocess_result}\n{recognize_result}\n{classify_result}"
 
 def reset_folders():
-    # 只重置输出相关的文件夹，保留 input 文件夹
     folders = [CSV_OUTPUT_FOLDER, CLASSIFY_OUTPUT_FOLDER, PREPROCESS_OUTPUT_FOLDER]
     for folder in folders:
-        if os.path.exists(folder):
-            shutil.rmtree(folder)
+        shutil.rmtree(folder, ignore_errors=True)
         os.makedirs(folder)
-    return f"输出文件夹 {', '.join(folders)} 已重置。"
+    return f"{', '.join(folders)} 文件夹已重置。"
 
 async def launch_ui():
     create_folders([INPUT_FOLDER, PREPROCESS_OUTPUT_FOLDER, CSV_OUTPUT_FOLDER, CLASSIFY_OUTPUT_FOLDER])
