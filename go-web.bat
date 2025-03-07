@@ -1,2 +1,2 @@
-env\python.exe webui.py
+python webui.py --auto-port
 pause
