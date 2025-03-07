@@ -6,6 +6,7 @@ import sys
 import asyncio
 from pydantic import BaseModel
 from typing import Any
+import torch
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
@@ -34,6 +35,11 @@ MAX_DURATION = 10
 BATCH_SIZE = 50
 MAX_WORKERS = 4
 MODEL_REVISION = "v2.0.4"
+
+# 从环境变量或默认值获取端口
+DEFAULT_PORT = 9975
+SERVER_PORT = int(os.environ.get("GRADIO_SERVER_PORT", DEFAULT_PORT))
+AUTO_PORT = bool(os.environ.get("GRADIO_AUTO_PORT", False))
 
 # 添加 Pydantic 配置
 class Config:
@@ -112,7 +118,16 @@ def reset_folders():
     return f"{', '.join(folders)} 文件夹已重置。"
 
 async def launch_ui():
+    global SERVER_PORT, AUTO_PORT
+    
+    # 创建必要的文件夹
     create_folders([INPUT_FOLDER, PREPROCESS_OUTPUT_FOLDER, CSV_OUTPUT_FOLDER, CLASSIFY_OUTPUT_FOLDER])
+    
+    # 检查 PyTorch 是否可用
+    if torch.cuda.is_available():
+        logging.info(f"PyTorch version {torch.__version__} available.")
+    else:
+        logging.warning("CUDA not available. Using CPU for processing.")
 
     with gr.Blocks(theme=gr.themes.Base(
             primary_hue="teal",  
@@ -210,7 +225,27 @@ async def launch_ui():
 
             classify_button.click(classify_audio_emotions, [classify_log_file, classify_max_workers, classify_output], classify_result)
         
-    await demo.launch(inbrowser=True, server_name="0.0.0.0", server_port=9975, max_threads=100, share=False)
+    try:
+        # 首先尝试使用指定端口
+        await demo.launch(inbrowser=True, server_name="0.0.0.0", server_port=SERVER_PORT, max_threads=100, share=False)
+    except OSError as e:
+        if "Cannot find empty port" in str(e) and AUTO_PORT:
+            logging.info(f"端口 {SERVER_PORT} 已被占用，将自动选择可用端口...")
+            # 如果指定端口被占用且启用了自动端口选择，则让 Gradio 自动选择端口
+            await demo.launch(inbrowser=True, server_name="0.0.0.0", max_threads=100, share=False)
+        else:
+            # 如果是其他错误或未启用自动端口选择，则继续抛出
+            raise
 
 if __name__ == "__main__":
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description="音频情感标注工具 Web 界面")
+    parser.add_argument("--port", type=int, default=SERVER_PORT, help=f"Web 服务器端口 (默认: {SERVER_PORT})")
+    parser.add_argument("--auto-port", action="store_true", help="如果指定端口被占用，自动选择可用端口")
+    args = parser.parse_args()
+    
+    # 更新端口设置
+    SERVER_PORT = args.port
+    AUTO_PORT = args.auto_port
+    
     asyncio.run(launch_ui())
